@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vylt"
+version = "0.1.0"
+description = "Vylt is a high-performance vault encryption engine designed to securely encrypt large media and gallery folders, split archives into multiple parts, and protect metadata using optional double-layer symmetric encryption powered by the native ciph ChaCha20 streaming engine with FD-safe and shared-memory–friendly design."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.7"
+
+authors = [
+  { name = "Ankit Chaubey" }
+]
+
+keywords = [
+  "encryption",
+  "vault",
+  "backup",
+  "security",
+  "chacha20",
+  "ciph",
+  "termux",
+  "archive",
+  "cli",
+  "media-encryption",
+  "gallery-encryption",
+  "file-sharding",
+  "streaming-encryption"
+]
+
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Operating System :: POSIX :: Linux",
+  "Environment :: Console",
+  "Topic :: Security",
+  "Topic :: Security :: Cryptography",
+  "Topic :: System :: Archiving :: Backup",
+  "Topic :: Utilities"
+]
+
+dependencies = [
+  "tqdm>=4.60.0",
+  "ciph>=0.1.0",
+]
+
+[project.optional-dependencies]
+ciph = []  # Native dependency: requires libciph.so (installed system-wide)
+
+[project.scripts]
+vylt = "vylt.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ankit-chaubey/vylt"
+Source = "https://github.com/ankit-chaubey/vylt"
+Issues = "https://github.com/ankit-chaubey/vylt/issues"
+Documentation = "https://github.com/ankit-chaubey/vylt#readme"
+Changelog = "https://github.com/ankit-chaubey/vylt/releases"
+
+Author = "https://github.com/ankit-chaubey"
+Maintainer = "https://github.com/ankit-chaubey"
+[tool.setuptools.packages.find]
+include = ["vylt*"]
+exclude = ["testdata*", "tests*", "examples*"]

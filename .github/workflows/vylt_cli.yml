@@ -1,0 +1,45 @@
+name: Vylt Integration Test
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    environment: protected-ci
+
+    env:
+      VYLT_PASSWORD: testpassword123
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang make libsodium-dev
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - run: |
+          python -m pip install --upgrade pip
+          pip install setuptools wheel build tqdm
+
+      - run: |
+          git clone https://github.com/ankit-chaubey/ciph.git
+          cd ciph
+          make
+          sudo cp libciph.so /usr/local/lib/
+          sudo ldconfig
+
+      - run: |
+          pip install -e .
+
+      - run: |
+          chmod +x vylt_test.sh
+          ./vylt_test.sh
