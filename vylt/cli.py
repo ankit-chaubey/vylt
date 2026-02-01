@@ -85,16 +85,13 @@ BANNER = f"""
 {C.CYAN}> vylt --help for more details{C.RESET}
 """
 
-
 def _cfg_password():
     cfg = VyltConfig.load()
-    env = cfg.get("password_from_env")
-    if env:
-        val = os.getenv(env)
-        if val:
-            return val.encode()
+    env = cfg.get("password_from_env") or "VYLT_PASSWORD"
+    val = os.getenv(env)
+    if val:
+        return val.encode()
     return None
-
 
 def ask_password(prompt, confirm=False):
     cfg_pwd = _cfg_password()
