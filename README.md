@@ -9,7 +9,7 @@
 [![PyPI](https://img.shields.io/pypi/v/vylt.svg)](https://pypi.org/project/vylt/)
 [![Downloads](https://img.shields.io/pypi/dm/vylt.svg)](https://pypi.org/project/vylt/)
 [![Python](https://img.shields.io/pypi/pyversions/vylt.svg)](https://pypi.org/project/vylt/)
-[![CI](https://github.com/ankit-chaubey/vylt/actions/workflows/vylt-cli.yml/badge.svg)](https://github.com/ankit-chaubey/vylt/actions/workflows/vylt-cli.yml)
+[![CI](https://github.com/ankit-chaubey/vylt/actions/workflows/vylt_cli.yml/badge.svg)](https://github.com/ankit-chaubey/vylt/actions/workflows/vylt_cli.yml)
 [![License](https://img.shields.io/github/license/ankit-chaubey/vylt)](https://github.com/ankit-chaubey/vylt/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/v/tag/ankit-chaubey/vylt?label=release)](https://github.com/ankit-chaubey/vylt/releases)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Termux-blue)](#)
