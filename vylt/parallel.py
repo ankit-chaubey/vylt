@@ -1,30 +1,34 @@
-"""
-ciph and vylt
-
-Projects:
-- ciph: https://github.com/ankit-chaubey/ciph
-- vylt: https://github.com/ankit-chaubey/vylt
-
-Author & Developer:
-Ankit Chaubey (@ankit-chaubey)
-https://github.com/ankit-chaubey
-
-Copyright © 2026–present Ankit Chaubey
-
-License:
-Apache License, Version 2.0
-https://www.apache.org/licenses/LICENSE-2.0
-"""
 import os
+import time
 import tarfile
 import tempfile
 import shutil
 import hashlib
+import threading
 from concurrent.futures import ProcessPoolExecutor
 from tqdm import tqdm
 
 from .header import pack_outer, build_manifest
 from .ciphwrap import encrypt_file
+from .fileprogress import track_progress
+
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for b in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(b)
+    return h.digest()
+
+
+def _collect_files(path):
+    if os.path.isfile(path):
+        return [path]
+    files = []
+    for r, _, fs in os.walk(path):
+        for f in fs:
+            files.append(os.path.join(r, f))
+    return files
 
 
 def check_disk_space(path):
@@ -36,35 +40,14 @@ def check_disk_space(path):
             for r, _, fs in os.walk(path)
             for f in fs
         )
-
     _, _, free = shutil.disk_usage(os.getcwd())
     if free < total:
         raise SystemExit("❌ Not enough disk space")
 
 
-def _collect_files(path):
-    if os.path.isfile(path):
-        return [path]
-
-    files = []
-    for r, _, fs in os.walk(path):
-        for f in fs:
-            files.append(os.path.join(r, f))
-    return files
-
-
-def sha256_file(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for b in iter(lambda: f.read(1024 * 1024), b""):
-            h.update(b)
-    return h.digest()
-
-
 def worker(args):
     files, out, data_pwd, meta_pwd, aid, part, total, seal = args
 
-    # ---------- PHASE 1: build TAR ----------
     with tempfile.NamedTemporaryFile(delete=False) as t:
         tar_path = t.name
 
@@ -74,7 +57,6 @@ def worker(args):
 
     manifest = build_manifest(files)
 
-    # ---------- PHASE 2: encrypt metadata ----------
     if seal:
         mp = tempfile.NamedTemporaryFile(delete=False)
         me = tempfile.NamedTemporaryFile(delete=False)
@@ -85,22 +67,54 @@ def worker(args):
             m.write(manifest)
 
         encrypt_file(mp.name, me.name, meta_pwd)
-
         meta_len = os.path.getsize(me.name)
         meta_hash = sha256_file(me.name)
-
     else:
         meta_len = len(manifest)
         meta_hash = hashlib.sha256(manifest).digest()
 
-    # ---------- PHASE 3: encrypt payload ----------
     ep = tempfile.NamedTemporaryFile(delete=False)
     ep.close()
 
-    encrypt_file(tar_path, ep.name, data_pwd)
+    size = os.path.getsize(tar_path)
+    stop = threading.Event()
+
+    with tqdm(
+        total=size,
+        unit="B",
+        unit_scale=True,
+        unit_divisor=1024,
+        desc="🛡️ Encrypting",
+        colour="magenta",
+        dynamic_ncols=True,
+    ) as bar:
+
+        t = threading.Thread(
+            target=track_progress,
+            args=(ep.name, bar, stop),
+            daemon=True,
+        )
+        t.start()
+
+        t0 = time.perf_counter()
+        encrypt_file(tar_path, ep.name, data_pwd)
+        t1 = time.perf_counter()
+
+        stop.set()
+        t.join()
+
     data_hash = sha256_file(ep.name)
 
-    # ---------- PHASE 4: write final archive ----------
+    mb = size / (1024 * 1024)
+    dt = t1 - t0
+
+    print(
+        f"\n✔ Encryption complete\n"
+        f"📦 Size   : {mb:.2f} MB\n"
+        f"⏱ Time   : {dt:.2f} s\n"
+        f"⚡ Speed  : {mb/dt:.2f} MB/s\n"
+    )
+
     with open(out, "wb") as f:
         f.write(
             pack_outer(
@@ -113,7 +127,6 @@ def worker(args):
                 data_hash,
             )
         )
-
         if seal:
             with open(me.name, "rb") as m:
                 shutil.copyfileobj(m, f)
@@ -123,7 +136,6 @@ def worker(args):
         with open(ep.name, "rb") as d:
             shutil.copyfileobj(d, f)
 
-    # ---------- CLEANUP ----------
     os.unlink(tar_path)
     os.unlink(ep.name)
     if seal:
@@ -147,24 +159,14 @@ def encrypt_parallel(path, data_pwd, meta_pwd, threads, aid, seal):
     for i, b in enumerate(buckets, 1):
         if not b:
             continue
-
         out = (
             f"{base}.{aid.hex()}.vylt"
             if n == 1
             else f"{base}.{aid.hex()}.{i:03d}.vylt"
         )
-
         tasks.append((b, out, data_pwd, meta_pwd, aid, i, len(buckets), seal))
 
     if n == 1:
-        list(
-            tqdm(
-                [tasks[0]],
-                desc="🛡️ Encrypting",
-                unit="shard",
-                colour="magenta",
-            )
-        )
         worker(tasks[0])
     else:
         with ProcessPoolExecutor(n) as ex:
