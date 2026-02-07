@@ -88,7 +88,6 @@ def worker(args):
         colour="magenta",
         dynamic_ncols=True,
     ) as bar:
-
         t = threading.Thread(
             target=track_progress,
             args=(ep.name, bar, stop),
@@ -144,26 +143,33 @@ def worker(args):
 
 
 def encrypt_parallel(path, data_pwd, meta_pwd, threads, aid, seal):
+    path = os.path.abspath(path.rstrip("/"))
     check_disk_space(path)
 
     files = _collect_files(path)
     if not files:
         raise SystemExit("❌ Nothing to encrypt")
 
+    parent = os.path.dirname(path)
+    base = os.path.basename(path)
+
     n = threads if threads > 1 else 1
     buckets = [files[i::n] for i in range(n)]
 
-    base = os.path.basename(path.rstrip("/"))
     tasks = []
 
     for i, b in enumerate(buckets, 1):
         if not b:
             continue
-        out = (
-            f"{base}.{aid.hex()}.vylt"
-            if n == 1
-            else f"{base}.{aid.hex()}.{i:03d}.vylt"
-        )
+
+        if n == 1:
+            out = os.path.join(parent, f"{base}.{aid.hex()}.vylt")
+        else:
+            out = os.path.join(
+                parent,
+                f"{base}.{aid.hex()}.{i:03d}.vylt"
+            )
+
         tasks.append((b, out, data_pwd, meta_pwd, aid, i, len(buckets), seal))
 
     if n == 1:
