@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vylt"
-version = "1.0.0"
+version = "1.1.0"
 description = "Vylt is a high-performance vault encryption engine designed to securely encrypt large media and gallery folders, split archives into multiple parts, and protect metadata using optional double-layer symmetric encryption powered by the native ciph ChaCha20 streaming engine with FD-safe and shared-memory–friendly design."
 readme = "README.md"
 license = { text = "Apache-2.0" }

@@ -132,6 +132,36 @@ def info_cmd(path):
     print(f"Meta bytes : {meta_len}")
 
 
+# =========================
+# 📄 LIST COMMAND (ADDED)
+# =========================
+def list_cmd(path):
+    with open(path, "rb") as f:
+        hdr = f.read(HEADER_SIZE)
+        magic, _, sealed, _, _, _, meta_len, _, _ = unpack_outer(hdr)
+        meta_blob = f.read(meta_len)
+
+    if magic != b"VYLT":
+        raise SystemExit("Not a Vylt archive")
+
+    if sealed:
+        pwd = retry_password("Metadata password: ")
+        with safe_temp() as enc, safe_temp() as dec:
+            open(enc, "wb").write(meta_blob)
+            decrypt_file(enc, dec, pwd)
+            meta = open(dec, "rb").read()
+    else:
+        meta = meta_blob
+
+    sig, count = struct.unpack(">4sI", meta[:8])
+    if sig != b"VMNF":
+        raise SystemExit("Bad metadata")
+
+    names = [n.decode() for n in meta[8:].split(b"\0") if n][:count]
+    for i, n in enumerate(names, 1):
+        print(f"{i:3d}. {n}")
+
+
 def decrypt_part(part, password, outdir):
     outdir = os.path.abspath(outdir)
     os.makedirs(outdir, exist_ok=True)
@@ -199,6 +229,7 @@ Examples:
   vylt encrypt secrets/ --seal-meta
   vylt decrypt backup.abc123.vylt
   vylt decrypt archive.vylt --out restored/
+  vylt list archive.vylt
 
 Tip:
   Use VYLT_PASSWORD env var for non-interactive use.
@@ -209,6 +240,7 @@ Tip:
 
     s.add_parser("setup", help="🔧 Run system diagnostics & benchmark")
     s.add_parser("info", help="📦 Show archive metadata").add_argument("file")
+    s.add_parser("list", help="📄 List files inside archive").add_argument("file")
 
     e = s.add_parser("encrypt", help="🔐 Encrypt file or directory")
     e.add_argument("path", help="Path to file or directory")
@@ -218,10 +250,7 @@ Tip:
 
     d = s.add_parser("decrypt", help="🔓 Decrypt archive")
     d.add_argument("files", nargs="+", help="Archive(s) to decrypt")
-    d.add_argument(
-        "--out",
-        help="Output directory (default: beside archive)",
-    )
+    d.add_argument("--out", help="Output directory (default: beside archive)")
 
     a = p.parse_args()
     cfg = VyltConfig.load()
@@ -232,6 +261,10 @@ Tip:
 
     if a.cmd == "info":
         info_cmd(a.file)
+        return
+
+    if a.cmd == "list":
+        list_cmd(a.file)
         return
 
     if a.cmd == "encrypt":

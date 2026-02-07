@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
 
-CONF = Path.home() / ".vylt.json"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+CONF = REPO_ROOT / ".vylt.json"
 
 DEFAULT = {
     "threads": 1,

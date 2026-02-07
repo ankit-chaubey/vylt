@@ -1,0 +1,8 @@
+{
+  "threads": 1,
+  "seal_meta": true,
+  "reuse_data_password_for_meta": true,
+  "password_from_env": "VYLT_PASSWORD",
+  "max_password_attempts": 5,
+  "benchmark_size_mb": 100
+}
