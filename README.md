@@ -1,6 +1,6 @@
 # 🔐 Vylt — Vault/Media Encryption Engine
 
- - **Version:** [v0.1.0](https://pypi.org/project/vylt)
+ - **Version:** [v1.1.1](https://pypi.org/project/vylt)
  - **Author:** [@ankit-chaubey](https://github.com/ankit-chaubey)
  - **License:** [Apache-2.0](https://github.com/ankit-chaubey/vylt/blob/main/LICENSE)
 
